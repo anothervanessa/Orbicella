@@ -2,8 +2,8 @@
   {
     "objectID": "orbicella_quarto_nb.html",
     "href": "orbicella_quarto_nb.html",
-    "title": "Orbicella Analysis of Hybridization",
+    "title": "Orbicella Analysis of Hybridization- Medina Lab Penn State University",
     "section": "",
-    "text": "install.packages(“quarto”) quarto::quarto_render(“notebook.Rmd”)"
+    "text": "Right now, my first task is to create/find a pipeline to merge the VCF files produced from the pairwise SNP-calling in MUMmer(nucmer) into a single VCF file of (orthologous?) SNP sites shared between the three species.\n```{unix}\n# This code calls the SNPs between the query and ref (O.fav). The\n# ref will later be changed to Cyphastrea.\n\nnucmer -c 100 -p sp1 Orbicella_faveolata_cds.fna Orbicella_annularis_cds.fna\nnucmer -c 100 -p sp2 Orbicella_faveolata_cds.fna Orbicella_franksi_cds.fna\ndelta-filter -r -q sp1.delta > sp1.filter\ndelta-filter -r -q sp2.delta > sp2.filter\n\n# Option -T is required for input to all2vcf program\nshow-snps -T sp1.filter > sp1_T.snps\nshow-snps -T sp2.filter > sp2_T.snps\n```\nNucmer only outputs .snps files, so I am using this script to transform the data into VCF format: https://github.com/MatteoSchiavinato/all2vcf\n```{unix}\n./all2vcf mummer --snps sp1_T.snps --reference Orbicella_faveolata_cds.fna --type SNP --input-header --no-Ns > sp1.vcf\n./all2vcf mummer --snps sp2_T.snps --reference Orbicella_faveolata_cds.fna --type SNP --input-header --no-Ns > sp2.vcf\n```\nMy second task is to isolate the Cyphastrea coral reads from the rest of the microbiome reads. This can be broken down into a number of steps. The first of which is running Psytrans: https://github.com/sylvainforet/psytrans."
   }
 ]

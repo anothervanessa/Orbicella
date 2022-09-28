@@ -1,7 +1,7 @@
 
 ---
-title: "Orbicella Analysis of Hybridization"
-author: "Vanessa Garcia"
+title: "Orbicella Analysis of Hybridization- Medina Lab Penn State University"
+author: "Vanessa Garcia, advised by Eric Crandall"
 date: "2022-9-28"
 format:
   html:
@@ -10,7 +10,31 @@ format:
     css: styles.css
     toc-depth: 3
 ---
-install.packages("quarto")
-quarto::quarto_render("notebook.Rmd")
+
+We are running an ABBA-BABA test for hybridaztion in the Orbicella species complex. The test requires a VCF file containing variants for each species against a reference (in our case, we will use the outgroup Cyphastrea as the reference), a species tree in Newik format, and a file specifying the sample-name/species pair. I was provided with genomes for O.faveolata, O. annularis, and O. franksi. I was also provided with a metagenome for Cyphastrea. 
+
+Right now, my first task is to create/find a pipeline to merge the VCF files produced from the pairwise SNP-calling in MUMmer(nucmer) into a single VCF file of (orthologous?) SNP sites shared between the three species.
+
+```{{unix}}
+# This code calls the SNPs between the query and ref (O.fav). The
+# ref will later be changed to Cyphastrea.
+
+nucmer -c 100 -p sp1 Orbicella_faveolata_cds.fna Orbicella_annularis_cds.fna
+nucmer -c 100 -p sp2 Orbicella_faveolata_cds.fna Orbicella_franksi_cds.fna
+delta-filter -r -q sp1.delta > sp1.filter
+delta-filter -r -q sp2.delta > sp2.filter
+
+# Option -T is required for input to all2vcf program
+show-snps -T sp1.filter > sp1_T.snps
+show-snps -T sp2.filter > sp2_T.snps
+```
+
+Nucmer only outputs .snps files, so I am using this script to transform the data into VCF format: https://github.com/MatteoSchiavinato/all2vcf
+
+```{{unix}}
+./all2vcf mummer --snps sp1_T.snps --reference Orbicella_faveolata_cds.fna --type SNP --input-header --no-Ns > sp1.vcf
+./all2vcf mummer --snps sp2_T.snps --reference Orbicella_faveolata_cds.fna --type SNP --input-header --no-Ns > sp2.vcf
+```
 
 
+My second task is to isolate the Cyphastrea coral reads from the rest of the microbiome reads. This can be broken down into a number of steps. The first of which is running Psytrans: https://github.com/sylvainforet/psytrans.

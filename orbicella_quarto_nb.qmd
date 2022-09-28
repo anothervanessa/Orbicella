@@ -1,0 +1,16 @@
+
+---
+title: "Orbicella Analysis of Hybridization"
+author: "Vanessa Garcia"
+date: "2022-9-28"
+format:
+  html:
+    toc: true
+    html-math-method: katex
+    css: styles.css
+    toc-depth: 3
+---
+install.packages("quarto")
+quarto::quarto_render("notebook.Rmd")
+
+

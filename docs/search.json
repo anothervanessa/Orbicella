@@ -1,0 +1,9 @@
+[
+  {
+    "objectID": "orbicella_quarto_nb.html",
+    "href": "orbicella_quarto_nb.html",
+    "title": "Orbicella Analysis of Hybridization",
+    "section": "",
+    "text": "install.packages(“quarto”) quarto::quarto_render(“notebook.Rmd”)"
+  }
+]

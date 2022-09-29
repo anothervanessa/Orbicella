@@ -168,6 +168,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 </header>
 
+<p>body-header: | This page brought to you by <a href="https://www.eurekalert.org/multimedia/927876" class="uri">https://www.eurekalert.org/multimedia/927876</a> margin-header: | <img src="177197_web.jpeg" class="img-fluid" alt="image"></p>
 <p>We are running an ABBA-BABA test for hybridaztion in the Orbicella species complex. The test requires a VCF file containing variants for each species against a reference (in our case, we will use the outgroup Cyphastrea as the reference), a species tree in Newik format, and a file specifying the sample-name/species pair. I was provided with genomes for O.faveolata, O. annularis, and O. franksi. I was also provided with a metagenome for Cyphastrea.</p>
 <p>Right now, my first task is to create/find a pipeline to merge the VCF files produced from the pairwise SNP-calling in MUMmer(nucmer) into a single VCF file of (orthologous?) SNP sites shared between the three species.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
@@ -188,7 +189,65 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="in">./all2vcf mummer --snps sp1_T.snps --reference Orbicella_faveolata_cds.fna --type SNP --input-header --no-Ns &gt; sp1.vcf</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="in">./all2vcf mummer --snps sp2_T.snps --reference Orbicella_faveolata_cds.fna --type SNP --input-header --no-Ns &gt; sp2.vcf</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="in"># Explore vcf files with bcftools: https://eriqande.github.io/eca-bioinf-handbook/basic-handling-of-vcf-files.html</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz | head </span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz | tail</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>My second task is to isolate the Cyphastrea coral reads from the rest of the microbiome reads. This can be broken down into a number of steps. The first of which is running Psytrans: https://github.com/sylvainforet/psytrans.</p>
+<p>This work is being done on the Medina lab server ‘argonaute’ and can be found in the directory /home/vpg5102/Orbicella_Panama_genomes. The Symbiodiniaceae genomes can be located at /home/rag5851/Symbiodiniaceae_genomes.</p>
+<p>The psytrans documentation isn’t that great, so Raul offered me some really helpful practical advice in setting up the files for the filtering of symbiont reads. First, I need to concatenate the coral and symbiont reference genomes into a single file. Name this file coralsymbiont_blastdb.</p>
+<p>species1 is the host. species2 is the symbiont. Rename each of the sequence components (i.e.&nbsp;&gt;scaffold.fasta) to include the species pre-fix.</p>
+<p>Once these steps are completed, run BLAST to identify which sequences are coral vs.&nbsp;symbiont. Run BLAST with these flags: -output 6 (gives tabulated table) -evalue 1 e-5 -out SPECIES1_SPECIES2_blastResults.txt</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="in"># Procure Orbicella genomes</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="in">curl https://www.ncbi.nlm.nih.gov/assembly/GCA_002042975.1</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="in">curl https://www.ncbi.nlm.nih.gov/assembly/GCA_001896105.1</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="in"># Add a broader selection of other corals as well.</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Pseudodiploria_strigosa_cds_100.final.clstr.fna</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Stylophora_pistillata_cds_100.final.clstr.fna</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Porites_astreoides_cds_100.final.clstr.fna</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Porites_australiensis_cds_100.final.clstr.fna</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Pocillopora_damicornis_cds_100.final.clstr.fna</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Platygyra_carnosus_cds_100.final.clstr.fna</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Montastraea_faveolata_cds_100.final.clstr.fna</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Madracis_auretenra_cds_100.final.clstr.fna</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Fungia_scutaria_cds_100.final.clstr.fna</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Favia_sp_cds_100.final.clstr.fna</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Astreopora_sp_cds_100.final.clstr.fna</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Acropora_tenuis_cds_100.final.clstr.fna</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Acropora_palmata_cds_100.final.clstr.fna</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Acropora_millepora_cds_100.final.clstr.fna</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Acropora_digitifera_cds_100.final.clstr.fna</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Montastraea_cavernosa_cds_100.final.clstr.fna</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Acropora_hyacinthus_cds_100.final.clstr.fna</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="in"># Add species prefix before concatenating references.</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="in"># Concatenate Coral Genomes</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Then run the psytrans code to separate the coral data from symbiont data.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="in">python psytrans.py [QUERIES] [-b BLASTRESULTSFILE] [OPTIONS]</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 
 

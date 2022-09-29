@@ -11,10 +11,16 @@ format:
     toc-depth: 3
 ---
 
+body-header: | 
+  This page brought to you by <https://www.eurekalert.org/multimedia/927876>
+margin-header: |
+  ![image](177197_web.jpeg)
+
 We are running an ABBA-BABA test for hybridaztion in the Orbicella species complex. The test requires a VCF file containing variants for each species against a reference (in our case, we will use the outgroup Cyphastrea as the reference), a species tree in Newik format, and a file specifying the sample-name/species pair. I was provided with genomes for O.faveolata, O. annularis, and O. franksi. I was also provided with a metagenome for Cyphastrea. 
 
 Right now, my first task is to create/find a pipeline to merge the VCF files produced from the pairwise SNP-calling in MUMmer(nucmer) into a single VCF file of (orthologous?) SNP sites shared between the three species.
 
+## Variant Calling
 ```{{unix}}
 # This code calls the SNPs between the query and ref (O.fav). The
 # ref will later be changed to Cyphastrea.
@@ -36,5 +42,92 @@ Nucmer only outputs .snps files, so I am using this script to transform the data
 ./all2vcf mummer --snps sp2_T.snps --reference Orbicella_faveolata_cds.fna --type SNP --input-header --no-Ns > sp2.vcf
 ```
 
+```{{unix}}
+# Explore vcf files with bcftools: https://eriqande.github.io/eca-bioinf-handbook/basic-handling-of-vcf-files.html
+
+bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz
+bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz | head 
+bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz | tail
+```
+
+## Prepare outgroup genome. 
 
 My second task is to isolate the Cyphastrea coral reads from the rest of the microbiome reads. This can be broken down into a number of steps. The first of which is running Psytrans: https://github.com/sylvainforet/psytrans.
+
+This work is being done on the Medina lab server 'argonaute' and can be found in the directory /home/vpg5102/Orbicella_Panama_genomes. The Symbiodiniaceae genomes can be located at /home/rag5851/Symbiodiniaceae_genomes.
+
+The psytrans documentation isn't that great, so Raul offered me some really helpful practical advice in setting up the files for the filtering of symbiont reads. First, I need to concatenate the coral and symbiont reference genomes into a single file. Name this file coralsymbiont_blastdb.
+
+species1 is the host. species2 is the symbiont. Rename each of the sequence components (i.e. >scaffold.fasta) to include the species pre-fix.
+
+Once these steps are completed, run BLAST to identify which sequences are coral vs. symbiont. Run BLAST with these flags:
+-output 6 (gives tabulated table)
+-evalue 1 e-5
+-out SPECIES1_SPECIES2_blastResults.txt
+
+
+```{{unix}}
+# Procure Orbicella genomes
+curl https://www.ncbi.nlm.nih.gov/assembly/GCA_002042975.1
+curl https://www.ncbi.nlm.nih.gov/assembly/GCA_001896105.1
+# Add a broader selection of other corals as well.
+curl http://comparative.reefgenomics.org/fna/Coral/Pseudodiploria_strigosa_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Stylophora_pistillata_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Porites_astreoides_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Porites_australiensis_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Pocillopora_damicornis_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Platygyra_carnosus_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Montastraea_faveolata_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Madracis_auretenra_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Fungia_scutaria_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Favia_sp_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Astreopora_sp_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Acropora_tenuis_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Acropora_palmata_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Acropora_millepora_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Acropora_digitifera_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Montastraea_cavernosa_cds_100.final.clstr.fna
+
+curl http://comparative.reefgenomics.org/fna/Coral/Acropora_hyacinthus_cds_100.final.clstr.fna
+```
+
+```{{unix}}
+# Add species prefix before concatenating references.
+# For concatenated host genomes.
+sed “s/^>/>species1_/g”
+# For concatenated symbiont genomes.
+sed “s/^>/>species2_/g”
+# Now concatenate Coral/Symbiont Genomes
+cat *.fna > species1_species2.fasta
+```
+
+```{{unix}}
+# Creat Blastdb and designate database type
+makeblastdb -in species1_species2_blastdb.fasta -dbtype nuc
+
+#BLAST search query of cyphastrea metagenome against database.
+blastp -query Cyphastrea.fasta -db species1_species2_blastdb.fasta -output 6 -evalue 1 e-5
+-out SPECIES1_SPECIES2_blastResults.txt
+```
+
+Then run the psytrans code to separate the coral data from symbiont data.
+
+```{{unix}}
+python psytrans.py [QUERIES] [-b BLASTRESULTSFILE] [OPTIONS]
+```
+

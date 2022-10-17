@@ -135,7 +135,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <!-- sidebar -->
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#variant-calling" id="toc-variant-calling" class="nav-link active" data-scroll-target="#variant-calling">Variant Calling</a></li>
+  <li><a href="#troubleshooting-all2vcf" id="toc-troubleshooting-all2vcf" class="nav-link" data-scroll-target="#troubleshooting-all2vcf">Troubleshooting all2vcf</a></li>
+  <li><a href="#demo-explore-vcf-files-with-bcftools-httpseriqande.github.ioeca-bioinf-handbookbasic-handling-of-vcf-files.html" id="toc-demo-explore-vcf-files-with-bcftools-httpseriqande.github.ioeca-bioinf-handbookbasic-handling-of-vcf-files.html" class="nav-link" data-scroll-target="#demo-explore-vcf-files-with-bcftools-httpseriqande.github.ioeca-bioinf-handbookbasic-handling-of-vcf-files.html">Demo: Explore vcf files with bcftools: https://eriqande.github.io/eca-bioinf-handbook/basic-handling-of-vcf-files.html</a></li>
+  <li><a href="#merge-vcf-files-to-represent-shared-snp-sites-across-the-3-species." id="toc-merge-vcf-files-to-represent-shared-snp-sites-across-the-3-species." class="nav-link" data-scroll-target="#merge-vcf-files-to-represent-shared-snp-sites-across-the-3-species.">Merge VCF Files to represent shared SNP sites across the 3 species.</a></li>
+  <li><a href="#prepare-outgroup-genome." id="toc-prepare-outgroup-genome." class="nav-link" data-scroll-target="#prepare-outgroup-genome.">Prepare outgroup genome.</a></li>
+  <li><a href="#final-filtering-step-with-blobtools-to-remove-traces-of-bacterial-reads." id="toc-final-filtering-step-with-blobtools-to-remove-traces-of-bacterial-reads." class="nav-link" data-scroll-target="#final-filtering-step-with-blobtools-to-remove-traces-of-bacterial-reads.">Final filtering step with Blobtools to remove traces of bacterial reads.</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -171,6 +182,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>body-header: | This page brought to you by <a href="https://www.eurekalert.org/multimedia/927876" class="uri">https://www.eurekalert.org/multimedia/927876</a> margin-header: | <img src="177197_web.jpeg" class="img-fluid" alt="image"></p>
 <p>We are running an ABBA-BABA test for hybridaztion in the Orbicella species complex. The test requires a VCF file containing variants for each species against a reference (in our case, we will use the outgroup Cyphastrea as the reference), a species tree in Newik format, and a file specifying the sample-name/species pair. I was provided with genomes for O.faveolata, O. annularis, and O. franksi. I was also provided with a metagenome for Cyphastrea.</p>
 <p>Right now, my first task is to create/find a pipeline to merge the VCF files produced from the pairwise SNP-calling in MUMmer(nucmer) into a single VCF file of (orthologous?) SNP sites shared between the three species.</p>
+<section id="variant-calling" class="level2">
+<h2 class="anchored" data-anchor-id="variant-calling">Variant Calling</h2>
 <div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="in"># This code calls the SNPs between the query and ref (O.fav). The</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="in"># ref will later be changed to Cyphastrea.</span></span>
@@ -183,73 +196,126 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="in"># Option -T is required for input to all2vcf program</span></span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="in">show-snps -T sp1.filter &gt; sp1_T.snps</span></span>
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="in">show-snps -T sp2.filter &gt; sp2_T.snps</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Nucmer only outputs .snps files, so I am using this script to transform the data into VCF format: https://github.com/MatteoSchiavinato/all2vcf</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="in">./all2vcf mummer --snps sp1_T.snps --reference Orbicella_faveolata_cds.fna --type SNP --input-header --no-Ns &gt; sp1.vcf</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="in">./all2vcf mummer --snps sp2_T.snps --reference Orbicella_faveolata_cds.fna --type SNP --input-header --no-Ns &gt; sp2.vcf</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="in"># Explore vcf files with bcftools: https://eriqande.github.io/eca-bioinf-handbook/basic-handling-of-vcf-files.html</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz | head </span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz | tail</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="in"># Get stats on VCF files.</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="in">all2vcf stats --vcf sp1.vcf</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="troubleshooting-all2vcf" class="level2">
+<h2 class="anchored" data-anchor-id="troubleshooting-all2vcf">Troubleshooting all2vcf</h2>
+<p>margin-header: | <img src="New%20Note.jpeg" class="img-fluid" alt="image"> So something went wrong when I tried to convert the .snp output from Mummer into VCF format. The chromosome and position data is present but I don’t see genotypes.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}}</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools view -h sp1.vcf  | awk '/INFO/ || /FORMAT/'</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>It looks like I don’t have a FORMAT or SAMPLE column. I only have the first 8 columns.</p>
+</section>
+<section id="demo-explore-vcf-files-with-bcftools-httpseriqande.github.ioeca-bioinf-handbookbasic-handling-of-vcf-files.html" class="level2">
+<h2 class="anchored" data-anchor-id="demo-explore-vcf-files-with-bcftools-httpseriqande.github.ioeca-bioinf-handbookbasic-handling-of-vcf-files.html">Demo: Explore vcf files with bcftools: https://eriqande.github.io/eca-bioinf-handbook/basic-handling-of-vcf-files.html</h2>
+<div class="sourceCode" id="cb4"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="in"># Who is in the VCF file?</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools query -l chinook-32-3Mb.vcf.gz</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="in"># How many variants?</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools stats chinook-32-3Mb.vcf.gz</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="in"># Where are these variants? Where does it start/end?</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz | head </span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools query -f '%CHROM\t%POS\n' chinook-32-3Mb.vcf.gz | tail</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="in"># show the whole file from the top (use show just the first 10 lines)</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools view chinook-32-3Mb.vcf.gz | head</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="in"># show just the header with -h.  Here look at just the last 10 lines of the header</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools view -h chinook-32-3Mb.vcf.gz | tail</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="in"># show the variants themslves (no header) with -H</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools view -H chinook-32-3Mb.vcf.gz | head</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="in"># Merge files. See genotypes with 100% of individuals having at least one read at the genotype.</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="in"># make file with first three samples</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools view -Oz -s DPCh_plate1_A05_S5,DPCh_plate1_A06_S6,DPCh_plate1_A11_S11 chinook-32-3Mb.vcf.gz &gt; first3.vcf.gz</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="in"># make another with the last three samples</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools view -Oz -s DPCh_plate1_H06_S90,DPCh_plate1_H11_S95,DPCh_plate1_H12_S96 chinook-32-3Mb.vcf.gz &gt; last3.vcf.gz</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="in"># merging requires that the files be indexed</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools index first3.vcf.gz</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools index last3.vcf.gz</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="in"># merge those into a file with 6 samples</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools merge -Oz first3.vcf.gz last3.vcf.gz &gt; 6-samples.vcf.gz</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a><span class="in"># Fraction of missing sites less than X</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="in">bcftools view -i 'F_MISSING &lt; 0.0' chinook-32-3Mb.vcf.gz | bcftools stats - | awk '/^SN/'</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="merge-vcf-files-to-represent-shared-snp-sites-across-the-3-species." class="level2">
+<h2 class="anchored" data-anchor-id="merge-vcf-files-to-represent-shared-snp-sites-across-the-3-species.">Merge VCF Files to represent shared SNP sites across the 3 species.</h2>
+<p>https://github.com/sbslee/fuc https://pyvcf.readthedocs.io/en/latest/</p>
+</section>
+<section id="prepare-outgroup-genome." class="level2">
+<h2 class="anchored" data-anchor-id="prepare-outgroup-genome.">Prepare outgroup genome.</h2>
 <p>My second task is to isolate the Cyphastrea coral reads from the rest of the microbiome reads. This can be broken down into a number of steps. The first of which is running Psytrans: https://github.com/sylvainforet/psytrans.</p>
-<p>This work is being done on the Medina lab server ‘argonaute’ and can be found in the directory /home/vpg5102/Orbicella_Panama_genomes. The Symbiodiniaceae genomes can be located at /home/rag5851/Symbiodiniaceae_genomes.</p>
+<p>This work is being done on the Medina lab server ‘argonaute’ and can be found in the directory /home/vpg5102/Orbicella. The Symbiodiniaceae genomes can be located at /home/rag5851/Symbiodiniaceae_genomes.</p>
 <p>The psytrans documentation isn’t that great, so Raul offered me some really helpful practical advice in setting up the files for the filtering of symbiont reads. First, I need to concatenate the coral and symbiont reference genomes into a single file. Name this file coralsymbiont_blastdb.</p>
 <p>species1 is the host. species2 is the symbiont. Rename each of the sequence components (i.e.&nbsp;&gt;scaffold.fasta) to include the species pre-fix.</p>
-<p>Once these steps are completed, run BLAST to identify which sequences are coral vs.&nbsp;symbiont. Run BLAST with these flags: -output 6 (gives tabulated table) -evalue 1 e-5 -out SPECIES1_SPECIES2_blastResults.txt</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="in"># Procure Orbicella genomes</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="in">curl https://www.ncbi.nlm.nih.gov/assembly/GCA_002042975.1</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="in">curl https://www.ncbi.nlm.nih.gov/assembly/GCA_001896105.1</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="in"># Add a broader selection of other corals as well.</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Pseudodiploria_strigosa_cds_100.final.clstr.fna</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Stylophora_pistillata_cds_100.final.clstr.fna</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Porites_astreoides_cds_100.final.clstr.fna</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Porites_australiensis_cds_100.final.clstr.fna</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Pocillopora_damicornis_cds_100.final.clstr.fna</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Platygyra_carnosus_cds_100.final.clstr.fna</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Montastraea_faveolata_cds_100.final.clstr.fna</span></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Madracis_auretenra_cds_100.final.clstr.fna</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Fungia_scutaria_cds_100.final.clstr.fna</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Favia_sp_cds_100.final.clstr.fna</span></span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Astreopora_sp_cds_100.final.clstr.fna</span></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Acropora_tenuis_cds_100.final.clstr.fna</span></span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Acropora_palmata_cds_100.final.clstr.fna</span></span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Acropora_millepora_cds_100.final.clstr.fna</span></span>
-<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Acropora_digitifera_cds_100.final.clstr.fna</span></span>
-<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Montastraea_cavernosa_cds_100.final.clstr.fna</span></span>
-<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="in">curl http://comparative.reefgenomics.org/fna/Coral/Acropora_hyacinthus_cds_100.final.clstr.fna</span></span>
-<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Once these steps are completed, run BLAST to identify which sequences are coral vs.&nbsp;symbiont. Run BLAST with these flags: -output 6 (gives tabulated table) -evalue 1 e-5 -out Species1Species2_blastResults.txt</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="in"># Add species prefix before concatenating references.</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="in"># Concatenate Coral Genomes</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Then run the psytrans code to separate the coral data from symbiont data.</p>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="in"># Get Orbicella genomes for cnidarian database</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="in">curl https://www.ncbi.nlm.nih.gov/assembly/GCA_002042975.1</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="in">curl https://www.ncbi.nlm.nih.gov/assembly/GCA_001896105.1</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="in"># Add a broader selection of other corals as well.</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="in"># reefgenomics.org</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="in">faveolata</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="in">S.pis</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="in">A. dig</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="in">A. tenuis</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="in">P. australiensis</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="in">P. dae</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="in">Porites lutea</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="in"># So I accidentally added this file to my db: GCF_002042975.1_ofav_dov_v1_cds_from_genomic.fna. Not sure if that will impact the blast results. </span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="sourceCode" id="cb6"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="in">python psytrans.py [QUERIES] [-b BLASTRESULTSFILE] [OPTIONS]</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="in"># Add species prefix before concatenating references.</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="in"># For concatenated host genomes.</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="in">sed “s/^&gt;/&gt;species1_/g”</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="in"># For concatenated symbiont genomes.</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="in">sed “s/^&gt;/&gt;species2_/g”</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="in"># Now concatenate Coral/Symbiont Genomes</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="in">cat *.fna &gt; species1_species2.fasta</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="in"># Creat Blastdb and designate database type</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="in">makeblastdb -in species1_species2_blastdb.fasta -dbtype nuc</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="in">#BLAST search query of cyphastrea metagenome against database.</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="in">blastn -query Cyphastrea_blast/Cyphastrea_metagenome.scaffolds.fasta -db species1_species2_blastdb.fasta -outfmt 6 -evalue 1e-5 -out Species1Species2_blastResults.txt</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Then run the psytrans code to separate the coral data from symbiont data.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{unix}</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="in"># Make a screen. Then run psytrans. 10/16/22</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="in"># screen -S psytrans_attempt</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="in"># python psytrans.py [QUERIES] [-b BLASTRESULTSFILE] [OPTIONS]</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="in">python psytrans-master/psytrans.py Cyphastrea_metagenome.scaffolds.fasta -b Species1Species2_blastResults.txt -t tmp -p 8</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>So that did not work. Apparently ‘maketrans’ is deprecated. I have to modify the script. I just changed string.maketrans to str.maketrans.</p>
+</section>
+<section id="final-filtering-step-with-blobtools-to-remove-traces-of-bacterial-reads." class="level2">
+<h2 class="anchored" data-anchor-id="final-filtering-step-with-blobtools-to-remove-traces-of-bacterial-reads.">Final filtering step with Blobtools to remove traces of bacterial reads.</h2>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

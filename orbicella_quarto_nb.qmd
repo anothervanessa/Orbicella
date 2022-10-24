@@ -18,10 +18,15 @@ margin-header: |
 
 We are running an ABBA-BABA test for hybridaztion in the Orbicella species complex. The test requires a VCF file containing variants for each species against a reference (in our case, we will use the outgroup Cyphastrea as the reference), a species tree in Newik format, and a file specifying the sample-name/species pair. I was provided with genomes for O.faveolata, O. annularis, and O. franksi. I was also provided with a metagenome for Cyphastrea. 
 
-Right now, my first task is to create/find a pipeline to merge the VCF files produced from the pairwise SNP-calling in MUMmer(nucmer) into a single VCF file of (orthologous?) SNP sites shared between the three species.
+Right now, my first task is to create/find a pipeline to merge the VCF files produced from the pairwise SNP-calling in MUMmer(nucmer) into a single VCF file of SNP sites shared between the three species.
 
 ## Variant Calling
-```{{unix}}
+We are conducting variant calling with Nucmer because it is a fast and efficient tool for variant calling between two genome assemblies. Raul said it is the only tool he is aware of for aligning multiple sequences against multiple sequences.
+
+```{bash}
+#| eval: false 
+#| #Put this at the beginning of every chunk so it knows not to run
+
 # This code calls the SNPs between the query and ref (O.fav). The
 # ref will later be changed to Cyphastrea.
 
@@ -38,7 +43,8 @@ show-snps -T sp2.filter > sp2_T.snps
 
 Nucmer only outputs .snps files, so I am using this script to transform the data into VCF format: https://github.com/MatteoSchiavinato/all2vcf
 
-```{{unix}}
+```{bash}
+#| eval: false
 ./all2vcf mummer --snps sp1_T.snps --reference Orbicella_faveolata_cds.fna --type SNP --input-header --no-Ns > sp1.vcf
 ./all2vcf mummer --snps sp2_T.snps --reference Orbicella_faveolata_cds.fna --type SNP --input-header --no-Ns > sp2.vcf
 
@@ -46,21 +52,53 @@ Nucmer only outputs .snps files, so I am using this script to transform the data
 all2vcf stats --vcf sp1.vcf
 ```
 
+## Rerun pipeline with correct assemblies.
+
+I mistakenly used the CDS assemblies when I should have used the nucleotide assemblies. I also need to double check that my coral database has nucleotide assembly files.
+
 ## Troubleshooting all2vcf
 
 margin-header: |
   ![image](New Note.jpeg)
 So something went wrong when I tried to convert the .snp output from Mummer into VCF format. The chromosome and position data is present but I don't see genotypes.
 
-```{{unix}}}
+```{bash}
+#| eval: false
 bcftools view -h sp1.vcf  | awk '/INFO/ || /FORMAT/'
 ```
 
 It looks like I don't have a FORMAT or SAMPLE column. I only have the first 8 columns.
 
-## Demo: Explore vcf files with bcftools: https://eriqande.github.io/eca-bioinf-handbook/basic-handling-of-vcf-files.html
-```{{unix}}
+Update! Raul says there are no homologous loci since I have haploid genome assemblies. Basically, I need to add the FORMAT column ("GT") and SAMPLE column titled ("Ofav", "Oann", or "Ofrank"). The sample column will contain "0|0 if the sample allele matches the ref or "1|1" if not. Then I should be ready to merge.
 
+I wrote a python script to accomplish this, see VCF_add_columns.ipynb.
+
+It seems to have worked, except I noticed that the SNP ID:LENGTH is occupying column 8 which interferes with the indexing scheme. Ask if I should delete this information or move it the third column.
+
+![image](QUAL FILTER INFO.jpeg)
+## Merge VCF Files to represent shared SNP sites across the 3 species.
+https://github.com/sbslee/fuc
+https://pyvcf.readthedocs.io/en/latest/
+
+I will test merge the three files and cross reference the new file against the three original files at 10 evenly spaced SNPS. This will probably require another script.
+
+```{bash}
+#| eval: false
+# get all data into dictionaries
+# data2 = {'CHROM': ['chr1', 'chr1', 'chr2'],
+# put data into dataframes
+# vf1 = pyvcf.VcfFrame.from_dict([], data1)
+# vf2 = pyvcf.VcfFrame.from_dict([], data2)
+# merge vcf files
+# pyvcf.merge([vf1, vf2]).df
+```
+
+
+Make sure to check the efficacy of this by cross referencing the merged file at certain SNPS against the original files.
+
+## Demo: Explore vcf files with bcftools: https://eriqande.github.io/eca-bioinf-handbook/basic-handling-of-vcf-files.html
+```{bash}
+#| eval: false
 # Who is in the VCF file?
 bcftools query -l chinook-32-3Mb.vcf.gz
 # How many variants?
@@ -99,10 +137,6 @@ bcftools merge -Oz first3.vcf.gz last3.vcf.gz > 6-samples.vcf.gz
 bcftools view -i 'F_MISSING < 0.0' chinook-32-3Mb.vcf.gz | bcftools stats - | awk '/^SN/'
 ```
 
-
-## Merge VCF Files to represent shared SNP sites across the 3 species.
-https://github.com/sbslee/fuc
-https://pyvcf.readthedocs.io/en/latest/
 
 
 
@@ -173,7 +207,16 @@ python psytrans-master/psytrans.py Cyphastrea_metagenome.scaffolds.fasta -b Spec
 So that did not work. Apparently 'maketrans' is deprecated. I have to modify the script. I just changed string.maketrans to str.maketrans.
 
 ## Filter Bacterial Sequences
+blobtools. add my thought process for why we are using each tool
 
 ## Create Newik Tree for input to DSUITE
 
+Since the phylogeny is already known, we can just construct the tree like this. Make sure the names here match the names in the other files.
+(Cyph,(Ofav,(Oann,Ofrank))); If I wanted to add branch lengths than I would add a semicolon and branch lengths.
+
 ## ABBA-BABBA Analysis
+Dsuite
+dtrios
+Review dog paper that eric sent and how they visualize the evidence of hybridization from ABBA BABBA analysis
+How do we know when the test is significant or not
+Read the fish papers that eric sent to colin and I

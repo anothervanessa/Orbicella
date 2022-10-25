@@ -198,8 +198,9 @@ blastn -query Cyphastrea_blast/Cyphastrea_metagenome.scaffolds.fasta -db species
 Then run the psytrans code to separate the coral data from symbiont data.
 
 ```{{unix}}
-# Make a screen. Then run psytrans. 10/16/22
+# Make a screen. Then run psytrans. 10/16/22. Again on 10/25
 # screen -S psytrans_attempt
+# Type "screen [-d] -r [pid.]tty.host" to resume
 # python psytrans.py [QUERIES] [-b BLASTRESULTSFILE] [OPTIONS]
 python psytrans-master/psytrans.py Cyphastrea_metagenome.scaffolds.fasta -b Species1Species2_blastResults.txt -t tmp -p 8
 ```
@@ -207,7 +208,20 @@ python psytrans-master/psytrans.py Cyphastrea_metagenome.scaffolds.fasta -b Spec
 So that did not work. Apparently 'maketrans' is deprecated. I have to modify the script. I just changed string.maketrans to str.maketrans.
 
 ## Filter Bacterial Sequences
-blobtools. add my thought process for why we are using each tool
+
+We are using blobtools which has great documentation and integration for mapping, visualization of assembly, and partitioning of sequences.
+
+We are using workflow-A for denovo genomes since that is what the Cyphastrea metagenome is. These are the steps:
+
+1. Construction a BlobDB data structure based on input files
+2. Visualisation of assembly and generation of tabular output
+3. Partitioning of sequence IDs based on user-defined parameters informed by the visualisations
+4. Partitioning of paired-end reads based on their mapping behaviour to sequence partitions
+5. Resulting reads are then assembled by partition and the assemblies can be screened again using the workflow.
+
+[image](blobtools.png)
+
+
 
 ## Create Newik Tree for input to DSUITE
 

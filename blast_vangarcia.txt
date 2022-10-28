@@ -1,0 +1,36 @@
+# week 9
+# Run blast in both nucleotide and protein space.
+
+# Download the proteins
+esearch -db protein -query PRJNA746979 | efetch -format fasta > db/proteins.fa
+#stats
+seqkit stat db/proteins.fa
+
+# Download the nucleotides 
+esearch -db nuccore -query PRJNA746979 | efetch -format fasta > db/genomes.fa
+
+# Build the blast index for proteins.
+makeblastdb -in db/proteins.fa -dbtype prot -out db/flu_prots -parse_seqids
+
+# Build the blast index for nucleotides.
+makeblastdb -in db/genomes.fa -dbtype nucl -out db/flu_nucs -parse_seqids
+
+# Get information on the database.
+blastdbcmd -db db/flu_prots -info
+
+# Investigate accession number and sequence lengths.
+blastdbcmd -db db/flu_prots -entry 'all' -outfmt "%a%l" | head
+
+# Download seq for gene of interest.
+
+efetch -db protein -id UYD71639 -format genbank > orf1ab.gb
+efetch -db protein -id UYD71639 -format fasta > orf1ab.fa
+
+# Run the tblastn and tblastx tool.
+tblastn -db db/flu_prots -outfmt "6 qacc sacc pident" -query orf1ab.fa > nuc_results.txt
+tblastx -db db/flu_nucs -outfmt "6 qacc sacc pident" -query orf1ab.fa > prot_results.txt
+
+# What is the most similar hit by % identity?
+prot_results.txt | sort -k3,3rn | head -4
+
+cat prot_results.txt | wc -l

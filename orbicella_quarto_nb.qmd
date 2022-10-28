@@ -71,30 +71,23 @@ It looks like I don't have a FORMAT or SAMPLE column. I only have the first 8 co
 
 Update! Raul says there are no homologous loci since I have haploid genome assemblies. Basically, I need to add the FORMAT column ("GT") and SAMPLE column titled ("Ofav", "Oann", or "Ofrank"). The sample column will contain "0|0 if the sample allele matches the ref or "1|1" if not. Then I should be ready to merge.
 
-I wrote a python script to accomplish this, see VCF_add_columns.ipynb.
+I wrote a python script to accomplish this (VCF_add_columns.ipynb).
 
 It seems to have worked, except I noticed that the SNP ID:LENGTH is occupying column 8 which interferes with the indexing scheme. Ask if I should delete this information or move it the third column.
 
 ![image](QUAL FILTER INFO.jpeg)
+
 ## Merge VCF Files to represent shared SNP sites across the 3 species.
 https://github.com/sbslee/fuc
 https://pyvcf.readthedocs.io/en/latest/
 
-I will test merge the three files and cross reference the new file against the three original files at 10 evenly spaced SNPS. This will probably require another script.
-
-```{bash}
-#| eval: false
-# get all data into dictionaries
-# data2 = {'CHROM': ['chr1', 'chr1', 'chr2'],
-# put data into dataframes
-# vf1 = pyvcf.VcfFrame.from_dict([], data1)
-# vf2 = pyvcf.VcfFrame.from_dict([], data2)
-# merge vcf files
-# pyvcf.merge([vf1, vf2]).df
-```
-
+I will test merge the three files and cross reference the new file against the three original files at 10 evenly spaced SNPS. This will probably require another script. See VCF_add_columns.py
 
 Make sure to check the efficacy of this by cross referencing the merged file at certain SNPS against the original files.
+
+My VCF script almost works but I am getting this error KeyError(f"{not_found} not in index"). This seems like a potential solution: https://stackoverflow.com/questions/51091132/pandas-and-scikit-learn-keyerror-not-in-index
+
+But the error arises when I call the prebuilt merge function from pyvcf. So I am not sure how to make this change.
 
 ## Demo: Explore vcf files with bcftools: https://eriqande.github.io/eca-bioinf-handbook/basic-handling-of-vcf-files.html
 ```{bash}
@@ -138,25 +131,24 @@ bcftools view -i 'F_MISSING < 0.0' chinook-32-3Mb.vcf.gz | bcftools stats - | aw
 ```
 
 
-
-
 ## Prepare outgroup genome. 
 
 My second task is to isolate the Cyphastrea coral reads from the rest of the microbiome reads. This can be broken down into a number of steps. The first of which is running Psytrans: https://github.com/sylvainforet/psytrans.
 
 This work is being done on the Medina lab server 'argonaute' and can be found in the directory /home/vpg5102/Orbicella. The Symbiodiniaceae genomes can be located at /home/rag5851/Symbiodiniaceae_genomes.
 
-The psytrans documentation isn't that great, so Raul offered me some really helpful practical advice in setting up the files for the filtering of symbiont reads. First, I need to concatenate the coral and symbiont reference genomes into a single file. Name this file coralsymbiont_blastdb.
+The psytrans documentation isn't that great, so Raul offered me some really helpful practical advice in setting up the files for the filtering of symbiont reads. First, I need to concatenate the coral and symbiont reference genomes into a single file.
 
 species1 is the host. species2 is the symbiont. Rename each of the sequence components (i.e. >scaffold.fasta) to include the species pre-fix.
 
 Once these steps are completed, run BLAST to identify which sequences are coral vs. symbiont. Run BLAST with these flags:
 -output 6 (gives tabulated table)
 -evalue 1 e-5
--out Species1Species2_blastResults.txt
+-out species1species2_blastResults.txt
 
 
-```{{unix}}
+```{bash}
+#| eval: false
 # Get Orbicella genomes for cnidarian database
 curl https://www.ncbi.nlm.nih.gov/assembly/GCA_002042975.1
 curl https://www.ncbi.nlm.nih.gov/assembly/GCA_001896105.1
@@ -177,35 +169,52 @@ Porites lutea
 
 
 
-```{{unix}}
+```{bash}
+#| eval: false
 # Add species prefix before concatenating references.
 # For concatenated host genomes.
 sed “s/^>/>species1_/g”
+
 # For concatenated symbiont genomes.
 sed “s/^>/>species2_/g”
+
 # Now concatenate Coral/Symbiont Genomes
-cat *.fna > species1_species2.fasta
+cat *.fna > species1_species2_blastdb.fasta
 ```
 
-```{{unix}}
+```{bash}
+#| eval: false
 # Creat Blastdb and designate database type
 makeblastdb -in species1_species2_blastdb.fasta -dbtype nuc
 
-#BLAST search query of cyphastrea metagenome against database.
+#BLAST search query of cyphastrea metagenome against database. IGNORE
 blastn -query Cyphastrea_blast/Cyphastrea_metagenome.scaffolds.fasta -db species1_species2_blastdb.fasta -outfmt 6 -evalue 1e-5 -out Species1Species2_blastResults.txt
+
+# CORRECT CODE. 10/26 Looking at this more closely the code should be:
+
+blastn -query Cyphastrea_metagenome.scaffolds.fasta -db Cyphastrea_blast/species1_species2_blastdb.fasta -outfmt 6 -evalue 1e-5 -out species1species2_blastResults.txt
 ```
+
+I am re-running BLAST 10/26/22.
 
 Then run the psytrans code to separate the coral data from symbiont data.
 
-```{{unix}}
-# Make a screen. Then run psytrans. 10/16/22. Again on 10/25
+```{bash}
+#| eval: false
+# Make a screen. Then run psytrans. 10/16/22. 
 # screen -S psytrans_attempt
 # Type "screen [-d] -r [pid.]tty.host" to resume
 # python psytrans.py [QUERIES] [-b BLASTRESULTSFILE] [OPTIONS]
 python psytrans-master/psytrans.py Cyphastrea_metagenome.scaffolds.fasta -b Species1Species2_blastResults.txt -t tmp -p 8
+
+# updated psytrans command 10/26
+python ../psytrans-master/psytrans.py ../Cyphastrea_metagenome.scaffolds.fasta -b species1species2_blastResults.txt -t tmp -p 8
 ```
 
-So that did not work. Apparently 'maketrans' is deprecated. I have to modify the script. I just changed string.maketrans to str.maketrans.
+
+Apparently 'maketrans' is deprecated. I have to modify the script. I just changed string.maketrans to str.maketrans.
+
+When I run psytrans, the output folder remains empty... Looking at the python script, I have to make sure the "s" in "species" is lowercase.
 
 ## Filter Bacterial Sequences
 
@@ -214,19 +223,103 @@ We are using blobtools which has great documentation and integration for mapping
 We are using workflow-A for denovo genomes since that is what the Cyphastrea metagenome is. These are the steps:
 
 1. Construction a BlobDB data structure based on input files
-2. Visualisation of assembly and generation of tabular output
+2. Visualisation of assembly and generation of tabular output. See "my first blob plot" tutorial.
 3. Partitioning of sequence IDs based on user-defined parameters informed by the visualisations
 4. Partitioning of paired-end reads based on their mapping behaviour to sequence partitions
 5. Resulting reads are then assembled by partition and the assemblies can be screened again using the workflow.
 
 [image](blobtools.png)
 
+I need an assembly file, a coverage file (I don't know where to get this. check directory where I originally got the genome from), and a hits file (e.g. the blast output).
 
+Create a blobDB.I am using pre-formatted db files from ncbi.
+```{bash}
+#| eval: false
+#!/bin/bash
+for i in {0..10..1}
+do
+	wget https://ftp.ncbi.nlm.nih.gov/blast/db/"nt.0$i.tar.gz"
+done
+# gunzip the files
+
+```
+
+Okay so far, as of 10/28, I have the first two. Now I need to run blast to create the hits file. I'm going to use megablast since it is used to find very similar sequences. I want to match the microbial sequences in our metagenome to the sequences in the pre-formatted database I just downloaded. Blobtools recommended these parameters for a good tradeoff between speed and accuracy.
+
+```{bash}
+#| eval: false
+blastn \
+-task megablast \
+-query Cyphastrea_metagenome.scaffolds.fasta \
+-db blobdb \
+-outfmt '6 qseqid staxids bitscore std' \
+-max_target_seqs 1 \
+-max_hsps 1 \
+-num_threads 16 \
+-evalue 1e-25 \
+-out assembly.vs.blobdb.mts1.hsp1.1e25.megablast.out
+```
+
+Create a blobplot
+```{bash}
+#| eval: false
+./blobtools create \
+ -i Cyphastrea_metagenome.scaffolds.fasta \
+ -b 1107374.scaffolds.sam.gz \
+ -t assembly.vs.blobdb.mts1.hsp1.1e25.megablast.out \
+ -o my_first_blobplot
+```
+
+Create a view of a blobDB file
+```{bash}
+#| eval: false
+./blobtools view \
+ -i my_first_blobplot.blobDB.json \
+ -o 
+```
+
+Inspect output
+```{bash}
+#| eval: false
+grep '^##' my_first_blobplot.blobDB.table.txt ; \
+ grep -v '^##' my_first_blobplot.blobDB.table.txt | \
+ column -t -s $'\t'
+```
+
+Create a blobplot
+```{bash}
+#| eval: false
+./blobtools plot \
+ -i blobDB.json \
+ -o 
+```
+
+```{bash}
+#| eval: false
+blobtools covplot  -i BLOBDB -c COV
+blobtools map2cov
+blobtools seqfilter
+blobtools bamfilter
+blobtools taxify
+
+```
 
 ## Create Newik Tree for input to DSUITE
 
 Since the phylogeny is already known, we can just construct the tree like this. Make sure the names here match the names in the other files.
 (Cyph,(Ofav,(Oann,Ofrank))); If I wanted to add branch lengths than I would add a semicolon and branch lengths.
+
+
+```{bash}
+#| eval: false
+abbababba_tree<-(Cyph,(Ofav,(Oann,Ofrank)));
+
+# If I need to read the tree
+ape::read.tree(abbababba_tree)
+# Save the tree to a text file
+ape::write.tree(tree, file='orbicella_cyph_tree.txt')
+```
+
 
 ## ABBA-BABBA Analysis
 Dsuite
@@ -234,3 +327,8 @@ dtrios
 Review dog paper that eric sent and how they visualize the evidence of hybridization from ABBA BABBA analysis
 How do we know when the test is significant or not
 Read the fish papers that eric sent to colin and I
+```{R}
+
+
+```
+

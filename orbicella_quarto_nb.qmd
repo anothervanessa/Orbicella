@@ -52,11 +52,11 @@ Nucmer only outputs .snps files, so I am using this script to transform the data
 all2vcf stats --vcf sp1.vcf
 ```
 
-## Rerun pipeline with correct assemblies.
+Make sure to run final pipeline with correct assemblies (nuc.fna.gz).
 
 I mistakenly used the CDS assemblies when I should have used the nucleotide assemblies. I also need to double check that my coral database has nucleotide assembly files.
 
-## Troubleshooting all2vcf
+### Editing VCF Files
 
 margin-header: |
   ![image](New Note.jpeg)
@@ -77,7 +77,7 @@ It seems to have worked, except I noticed that the SNP ID:LENGTH is occupying co
 
 ![image](QUAL FILTER INFO.jpeg)
 
-## Merge VCF Files to represent shared SNP sites across the 3 species.
+### Merge VCF Files to represent shared SNP sites across the 3 species.
 https://github.com/sbslee/fuc
 https://pyvcf.readthedocs.io/en/latest/
 
@@ -89,7 +89,7 @@ My VCF script almost works but I am getting this error KeyError(f"{not_found} no
 
 But the error arises when I call the prebuilt merge function from pyvcf. So I am not sure how to make this change.
 
-## Demo: Explore vcf files with bcftools: https://eriqande.github.io/eca-bioinf-handbook/basic-handling-of-vcf-files.html
+### Demo: Explore vcf files with bcftools: https://eriqande.github.io/eca-bioinf-handbook/basic-handling-of-vcf-files.html
 ```{bash}
 #| eval: false
 # Who is in the VCF file?
@@ -131,7 +131,7 @@ bcftools view -i 'F_MISSING < 0.0' chinook-32-3Mb.vcf.gz | bcftools stats - | aw
 ```
 
 
-## Prepare outgroup genome. 
+## Prepare Cyphastrea (outgroup) genome. 
 
 My second task is to isolate the Cyphastrea coral reads from the rest of the microbiome reads. This can be broken down into a number of steps. The first of which is running Psytrans: https://github.com/sylvainforet/psytrans.
 
@@ -163,10 +163,9 @@ P. australiensis
 P. dae
 Porites lutea
 
-# So I accidentally added this file to my db: GCF_002042975.1_ofav_dov_v1_cds_from_genomic.fna. Not sure if that will impact the blast results. 
+# I accidentally added this file to my db: GCF_002042975.1_ofav_dov_v1_cds_from_genomic.fna. Not sure if that will impact the blast results. 
 
 ```
-
 
 
 ```{bash}
@@ -187,7 +186,7 @@ cat *.fna > species1_species2_blastdb.fasta
 # Creat Blastdb and designate database type
 makeblastdb -in species1_species2_blastdb.fasta -dbtype nuc
 
-#BLAST search query of cyphastrea metagenome against database. IGNORE
+#BLAST search query of cyphastrea metagenome against database
 blastn -query Cyphastrea_blast/Cyphastrea_metagenome.scaffolds.fasta -db species1_species2_blastdb.fasta -outfmt 6 -evalue 1e-5 -out Species1Species2_blastResults.txt
 
 # CORRECT CODE. 10/26 Looking at this more closely the code should be:
@@ -197,7 +196,7 @@ blastn -query Cyphastrea_metagenome.scaffolds.fasta -db Cyphastrea_blast/species
 
 I am re-running BLAST 10/26/22.
 
-Then run the psytrans code to separate the coral data from symbiont data.
+### Psytrans code to separate the coral data from symbiont data.
 
 ```{bash}
 #| eval: false
@@ -208,7 +207,7 @@ Then run the psytrans code to separate the coral data from symbiont data.
 python psytrans-master/psytrans.py Cyphastrea_metagenome.scaffolds.fasta -b Species1Species2_blastResults.txt -t tmp -p 8
 
 # updated psytrans command 10/26
-python ../psytrans-master/psytrans.py ../Cyphastrea_metagenome.scaffolds.fasta -b species1species2_blastResults.txt -t tmp -p 8
+python ../psytrans-master/psytrans.py ../Cyphastrea_metagenome.scaffolds.fasta -b species1species2_blastResults.txt -t tmp -p 8 -v
 ```
 
 
@@ -216,7 +215,7 @@ Apparently 'maketrans' is deprecated. I have to modify the script. I just change
 
 When I run psytrans, the output folder remains empty... Looking at the python script, I have to make sure the "s" in "species" is lowercase.
 
-## Filter Bacterial Sequences
+### Removing Bacterial Sequences with Blobtools
 
 We are using blobtools which has great documentation and integration for mapping, visualization of assembly, and partitioning of sequences.
 
@@ -327,8 +326,9 @@ dtrios
 Review dog paper that eric sent and how they visualize the evidence of hybridization from ABBA BABBA analysis
 How do we know when the test is significant or not
 Read the fish papers that eric sent to colin and I
-```{R}
 
+```{R}
+# Input: VCF file, Newick tree, sample name file
 
 ```
 
